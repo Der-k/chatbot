@@ -1,0 +1,11 @@
+Q: How long does it take to build a chatbot?
+A: Most chatbot projects take between 3 to 7 days depending on complexity.
+
+Q: Do you offer a free trial?
+A: Yes, we offer a 7-day trial for social media advertising and chatbot testing.
+
+Q: Can you integrate with WhatsApp or Messenger?
+A: Yes, our bots can be deployed on WhatsApp, Messenger, or directly on your website.
+
+Q: Do you work with small businesses?
+A: Absolutely. Our solutions are built specifically for startups and SMEs.

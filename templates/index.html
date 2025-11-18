@@ -1,0 +1,208 @@
+{% extends "base.html" %}
+
+{% block title %}Corporate Support Chatbot - {{ company_name }}{% endblock %}
+
+{% block styles %}
+.chat-container {
+    /* Centralizes the chat for a better desktop experience */
+    max-width: 600px;
+    margin: 40px auto;
+    background-color: #fff;
+    border-radius: 12px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    display: flex;
+    flex-direction: column;
+    height: 80vh; /* Use a relative height */
+    min-height: 550px;
+}
+
+.chat-header {
+    padding: 15px 20px;
+    background-color: #17a2b8; /* Professional Header Color */
+    color: white;
+    border-top-left-radius: 12px;
+    border-top-right-radius: 12px;
+    text-align: center;
+}
+
+.chat-header h1 {
+    margin: 0;
+    font-size: 1.5em;
+}
+
+.chat-header p {
+    margin-top: 5px;
+    font-size: 0.9em;
+    opacity: 0.9;
+}
+
+.chat-window {
+    flex-grow: 1; /* Allows the chat window to take up available space */
+    padding: 20px;
+    overflow-y: auto;
+    background-color: #f8f9fa; /* Light background for chat area */
+    border-bottom: 1px solid #dee2e6;
+    display: flex;
+    flex-direction: column; /* Messages stack vertically */
+}
+
+.message {
+    padding: 10px 15px;
+    margin-bottom: 15px;
+    border-radius: 20px; /* Softer, modern roundness */
+    max-width: 80%; /* Slightly wider max-width */
+    word-wrap: break-word;
+    font-size: 0.95em;
+    line-height: 1.4;
+    transition: all 0.3s ease; /* Smooth transition for visual flair */
+}
+
+/* User Message Styles - Distinct, Corporate Blue */
+.user-message {
+    background-color: #007bff; /* Primary Blue */
+    color: white;
+    margin-left: auto; /* Push to the right */
+    border-bottom-right-radius: 5px; /* Slight 'tail' effect */
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+/* Bot Message Styles - Light, Subtle Gray */
+.bot-message {
+    background-color: #e9ecef; /* Very light gray */
+    color: #343a40; /* Darker text */
+    margin-right: auto; /* Push to the left */
+    border-bottom-left-radius: 5px; /* Slight 'tail' effect */
+}
+
+/* Message Input Area */
+.input-area {
+    padding: 15px 20px;
+    border-top: 1px solid #dee2e6;
+}
+
+.input-group {
+    display: flex;
+    gap: 10px; /* Space between input and button */
+}
+
+.input-group input {
+    flex-grow: 1;
+    padding: 12px 15px;
+    border: 1px solid #ced4da;
+    border-radius: 25px; /* Pill shape input */
+    font-size: 1em;
+    transition: border-color 0.3s;
+}
+
+.input-group input:focus {
+    border-color: #007bff; /* Highlight on focus */
+    outline: none;
+    box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
+}
+
+.input-group button {
+    padding: 12px 20px;
+    background-color: #28a745; /* Success Green */
+    color: white;
+    border: none;
+    border-radius: 25px; /* Pill shape button */
+    cursor: pointer;
+    font-weight: bold;
+    transition: background-color 0.3s ease, transform 0.1s ease;
+}
+
+.input-group button:hover {
+    background-color: #218838;
+}
+
+.input-group button:active {
+    transform: translateY(1px);
+}
+{% endblock %}
+
+{% block content %}
+<h1>{{ company_name }} RAG Support Chat</h1>
+<p style="text-align: center; color: #6c757d;">Ask me questions based on the documents in your `/data` folder.</p>
+
+<div class="chat-window" id="chat-window">
+        <div class="message bot-message">
+            Hello! I am the official support representative for {{ company_name }}. How can I assist you today?
+        </div>
+    </div>
+
+    <div class="input-area">
+        <div class="input-group">
+            <input type="text" id="user-input" placeholder="Type your question here...">
+            <button onclick="sendMessage()">Send</button>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    const chatWindow = document.getElementById('chat-window');
+    const userInput = document.getElementById('user-input');
+
+    // Function to add a message to the chat window
+    function addMessage(text, sender) {
+        const messageDiv = document.createElement('div');
+        messageDiv.className = `message ${sender}-message`;
+        messageDiv.textContent = text;
+        chatWindow.appendChild(messageDiv);
+        // Scroll to the bottom
+        chatWindow.scrollTop = chatWindow.scrollHeight;
+    }
+
+    // Function to send the message to the Flask backend
+    function sendMessage() {
+        const question = userInput.value.trim();
+        if (question === "") return;
+
+        // 1. Display user message
+        addMessage(question, 'user');
+        userInput.value = ''; // Clear input
+
+        // 2. Display 'Bot is typing...'
+        const botThinkingId = 'bot-thinking';
+        addMessage("Bot is thinking...", 'bot');
+        const thinkingMessage = chatWindow.lastElementChild;
+        thinkingMessage.id = botThinkingId;
+
+        // 3. Send AJAX request to Flask
+        fetch('/ask', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ 'question': question })
+        })
+        .then(response => response.json())
+        .then(data => {
+            // 4. Remove 'Bot is thinking...'
+            const thinkingDiv = document.getElementById(botThinkingId);
+            if (thinkingDiv) {
+                thinkingDiv.remove();
+            }
+            
+            // 5. Display bot response
+            addMessage(data.response, 'bot');
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            const thinkingDiv = document.getElementById(botThinkingId);
+            if (thinkingDiv) {
+                thinkingDiv.remove();
+            }
+            addMessage("An error occurred. Could not reach the server.", 'bot');
+        });
+    }
+
+    // Allow pressing Enter to send
+    userInput.addEventListener('keypress', function(e) {
+        if (e.key === 'Enter') {
+            sendMessage();
+        }
+    });
+</script>
+{% endblock %}
